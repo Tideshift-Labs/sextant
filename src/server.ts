@@ -3,28 +3,8 @@ import { z } from 'zod';
 import { handleSearch } from './tools/search.ts';
 import { handleList } from './tools/list.ts';
 import { handleGet } from './tools/get.ts';
-import { handleReindex, setReindexPrimary } from './tools/reindex.ts';
+import { handleReindex } from './tools/reindex.ts';
 import { handleStatus } from './tools/status.ts';
-import { reloadIfChanged } from './store/persistence.ts';
-
-// Whether this instance is the primary (owns watcher + indexing).
-// Secondary instances reload from disk before each tool call.
-let isPrimary = true;
-
-export function setIsPrimary(value: boolean): void {
-  isPrimary = value;
-  setReindexPrimary(value);
-}
-
-export function getIsPrimary(): boolean {
-  return isPrimary;
-}
-
-async function ensureFresh(): Promise<void> {
-  if (!isPrimary) {
-    await reloadIfChanged();
-  }
-}
 
 export function createMcpServer(): McpServer {
   const server = new McpServer(
@@ -54,7 +34,6 @@ export function createMcpServer(): McpServer {
         ),
     },
     async (args) => {
-      await ensureFresh();
       const result = await handleSearch(args);
       return { content: [{ type: 'text', text: result }] };
     }
@@ -68,7 +47,6 @@ export function createMcpServer(): McpServer {
       category: z.string().optional().describe('Optional: filter by category/folder name'),
     },
     async (args) => {
-      await ensureFresh();
       const result = handleList(args);
       return { content: [{ type: 'text', text: result }] };
     }
@@ -84,7 +62,6 @@ export function createMcpServer(): McpServer {
       ),
     },
     async (args) => {
-      await ensureFresh();
       const result = await handleGet(args);
       return { content: [{ type: 'text', text: result }] };
     }
@@ -93,7 +70,7 @@ export function createMcpServer(): McpServer {
   // reindex_docs tool
   server.tool(
     'reindex_docs',
-    'Force a full re-index of all documents. Use if documents have been bulk-updated outside the watcher, or if search results seem stale.',
+    'Force a full re-index of all documents. Use if search results seem stale or docs have been updated.',
     {
       clear_existing: z
         .boolean()
@@ -101,7 +78,6 @@ export function createMcpServer(): McpServer {
         .describe('If true, wipe all existing index data before re-indexing (default: true)'),
     },
     async (args) => {
-      await ensureFresh();
       const result = await handleReindex(args);
       return { content: [{ type: 'text', text: result }] };
     }
@@ -110,7 +86,7 @@ export function createMcpServer(): McpServer {
   // sextant_status tool
   server.tool(
     'sextant_status',
-    'Check Sextant health: indexing progress, Ollama connectivity, index stats, and instance role.',
+    'Check Sextant health: indexing progress, Ollama connectivity, and index stats.',
     {},
     async () => {
       const result = await handleStatus();

@@ -88,6 +88,7 @@ export async function searchHybrid(
       value: queryEmbedding,
       property: 'embedding',
     },
+    similarity: config.similarityThreshold,
     limit: topK,
     hybridWeights: {
       text: config.hybridWeightText,
@@ -125,6 +126,7 @@ export async function searchVector(queryEmbedding: number[], topK: number, categ
       value: queryEmbedding,
       property: 'embedding',
     },
+    similarity: config.similarityThreshold,
     limit: topK,
   };
 

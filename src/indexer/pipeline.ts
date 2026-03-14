@@ -5,7 +5,7 @@ import { chunkMarkdown } from './chunker.ts';
 import { embedTexts, checkOllamaHealth } from './embedder.ts';
 import { insertChunks, removeByFile, initStore } from '../store/orama-store.ts';
 import { upsertFile, removeFile as removeFileMeta, getFile, getAllFiles, clearAll as clearMetadata } from '../store/metadata-db.ts';
-import { debouncedPersist, persistToDisk } from '../store/persistence.ts';
+import { persistToDisk } from '../store/persistence.ts';
 import { setIndexing, updateProgress, setReady, setError, isCancelRequested, getState } from './state.ts';
 import type { IndexStats, DocChunk } from './types.ts';
 
@@ -133,50 +133,6 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
   }
 
   return { filesProcessed, chunksCreated, duration: Date.now() - start };
-}
-
-export async function indexFile(filePath: string, docsPath: string): Promise<void> {
-  const relPath = path.relative(docsPath, filePath).replace(/\\/g, '/');
-  console.error(`[pipeline] Indexing file: ${relPath}`);
-
-  try {
-    const file = Bun.file(filePath);
-    const stat = await file.stat();
-    if (!stat) return;
-    const content = await file.text();
-    const lastModified = stat.mtimeMs;
-
-    const { chunks, metadata } = chunkMarkdown(filePath, content, lastModified, docsPath);
-
-    // Remove old chunks
-    await removeByFile(relPath);
-
-    if (chunks.length > 0) {
-      const texts = chunks.map((c) => c.content);
-      const embeddings = await embedTexts(texts);
-      await insertChunks(chunks, embeddings);
-
-      upsertFile(relPath, lastModified, chunks.length, metadata.title ?? chunks[0]?.headingHierarchy[0] ?? null, chunks[0]?.category ?? 'root');
-    }
-
-    debouncedPersist();
-    console.error(`[pipeline] Re-indexed ${relPath}: ${chunks.length} chunks`);
-  } catch (err) {
-    console.error(`[pipeline] Error indexing file ${relPath}:`, err);
-  }
-}
-
-export async function removeFileFromIndex(filePath: string, docsPath: string): Promise<void> {
-  const relPath = path.relative(docsPath, filePath).replace(/\\/g, '/');
-  console.error(`[pipeline] Removing file: ${relPath}`);
-
-  try {
-    await removeByFile(relPath);
-    removeFileMeta(relPath);
-    debouncedPersist();
-  } catch (err) {
-    console.error(`[pipeline] Error removing file ${relPath}:`, err);
-  }
 }
 
 export async function fullReindex(docsPath: string, clearExisting: boolean): Promise<IndexStats> {

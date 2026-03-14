@@ -34,7 +34,6 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@orama/orama": "^3.1.18",
-    "chokidar": "^5.0.0",
     "dotenv": "^17.3.1"
   }
 }

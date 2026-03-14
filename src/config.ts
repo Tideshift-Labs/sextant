@@ -29,12 +29,12 @@ export const config = {
   embeddingModel: envStr('EMBEDDING_MODEL', 'nomic-embed-text'),
   embeddingDims: envInt('EMBEDDING_DIMS', 768),
   dataPath: path.resolve(envStr('DATA_PATH', '.sextant')),
-  watchEnabled: envBool('WATCH_ENABLED', true),
   maxChunkTokens: envInt('MAX_CHUNK_TOKENS', 512),
   chunkOverlapLines: envInt('CHUNK_OVERLAP_LINES', 2),
   defaultTopK: envInt('DEFAULT_TOP_K', 10),
   hybridWeightText: envFloat('HYBRID_WEIGHT_TEXT', 0.5),
   hybridWeightVector: envFloat('HYBRID_WEIGHT_VECTOR', 0.5),
+  similarityThreshold: envFloat('SIMILARITY_THRESHOLD', 0.5),
 
   // Embedding instructions (nomic-embed-text uses "search_document: " / "search_query: " prefixes)
   indexInstruction: envStr('INDEX_INSTRUCTION', 'search_document: '),

@@ -2,7 +2,6 @@ import { config } from '../config.ts';
 import { getState } from '../indexer/state.ts';
 import { checkOllamaHealth } from '../indexer/embedder.ts';
 import { listFiles } from '../store/metadata-db.ts';
-import { getIsPrimary } from '../server.ts';
 
 export async function handleStatus(): Promise<string> {
   const state = getState();
@@ -10,9 +9,6 @@ export async function handleStatus(): Promise<string> {
   const files = listFiles();
 
   const lines: string[] = ['Sextant Status'];
-
-  // Instance role
-  lines.push(`  Instance:  ${getIsPrimary() ? 'primary' : 'secondary'}`);
 
   // Indexing status
   if (state.status === 'indexing') {
