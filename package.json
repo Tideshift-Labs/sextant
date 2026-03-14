@@ -2,6 +2,10 @@
   "name": "sextant-docs-mcp",
   "version": "0.1.0",
   "description": "MCP server for hybrid semantic + keyword search over local markdown docs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tideshift-Labs/sextant.git"
+  },
   "module": "src/index.ts",
   "type": "module",
   "bin": {

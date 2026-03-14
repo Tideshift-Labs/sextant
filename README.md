@@ -55,7 +55,7 @@ Add the following to your Claude Code MCP configuration (`.claude/mcp.json` in y
     "docs-search": {
       "type": "stdio",
       "command": "bunx",
-      "args": ["github:YourUsername/sextant"],
+      "args": ["github:Tideshift-Labs/sextant"],
       "env": {
         "DOCS_PATH": "/absolute/path/to/your/docs"
       }
@@ -64,7 +64,7 @@ Add the following to your Claude Code MCP configuration (`.claude/mcp.json` in y
 }
 ```
 
-Replace `YourUsername` with the GitHub account hosting the repo, and set `DOCS_PATH` to the absolute path of the markdown folder you want to index.
+Set `DOCS_PATH` to the absolute path of the markdown folder you want to index.
 
 Once configured, Claude Code will have access to the following tools:
 
@@ -78,7 +78,7 @@ Once configured, Claude Code will have access to the following tools:
 Clone the repo and install dependencies:
 
 ```bash
-git clone https://github.com/YourUsername/sextant.git
+git clone https://github.com/Tideshift-Labs/sextant.git
 cd sextant
 bun install
 ```
