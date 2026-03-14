@@ -92,30 +92,6 @@ Once configured, Claude Code will have access to the following tools:
 - **reindex_docs** - Force a full re-index of all documents.
 - **sextant_status** - Check server health, indexing progress, Ollama connectivity, and index statistics.
 
-## Local development
-
-Clone the repo and install dependencies:
-
-```bash
-git clone https://github.com/Tideshift-Labs/sextant.git
-cd sextant
-bun install
-```
-
-Create a `.env` file (or copy `.env.example`):
-
-```bash
-cp .env.example .env
-```
-
-Place some markdown files in the `docs/` folder, then start the server:
-
-```bash
-bun dev
-```
-
-The server logs to stderr. On first run it will index all markdown files and persist the index to `.sextant/`. On subsequent starts it loads the persisted index and only re-indexes files that have changed.
-
 ## Configuration
 
 All settings can be configured through environment variables or a `.env` file:
@@ -132,45 +108,13 @@ All settings can be configured through environment variables or a `.env` file:
 | `HYBRID_WEIGHT_TEXT` | `0.5` | Weight for keyword matching in hybrid mode |
 | `HYBRID_WEIGHT_VECTOR` | `0.5` | Weight for semantic matching in hybrid mode |
 
-## Building a standalone executable
+## Contributing
 
-Bun can compile the server into a single executable that includes the runtime:
-
-```bash
-bun run build
-```
-
-This produces `dist/docs-mcp-server` (or `.exe` on Windows). The executable can be distributed and run without Bun installed on the target machine.
-
-## Project structure
-
-```
-src/
-  index.ts              Entry point, wires everything together
-  server.ts             MCP server definition and tool registration
-  config.ts             Environment variable loading and defaults
-  indexer/
-    chunker.ts          Splits markdown by headings into chunks
-    embedder.ts         Calls Ollama for batch embedding
-    freshness.ts        Per-search staleness check and background reindex
-    pipeline.ts         Orchestrates scan, chunk, embed, store
-    state.ts            Indexing state machine (idle/indexing/ready/error)
-    types.ts            Shared TypeScript types
-  store/
-    orama-store.ts      Orama instance: create, insert, search
-    metadata-db.ts      SQLite for file-level metadata tracking
-    persistence.ts      Save/load Orama index to/from disk
-  tools/
-    search.ts           search_docs tool handler
-    list.ts             list_docs tool handler
-    get.ts              get_doc tool handler
-    reindex.ts          reindex_docs tool handler
-    status.ts           sextant_status tool handler
-```
+See [docs/contributing.md](docs/contributing.md) for local development setup, building, and diagnostics.
 
 ## Technical details
 
-See [docs/technical_details.md](docs/technical_details.md) for in-depth coverage of the architecture, chunking strategy, persistence model, index freshness logic, and edge cases.
+See [docs/technical_details.md](docs/technical_details.md) for architecture, project structure, chunking strategy, persistence model, index freshness logic, and edge cases.
 
 ## License
 

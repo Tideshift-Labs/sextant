@@ -18,6 +18,33 @@ Store (orama-store, metadata-db, persistence)
 
 The MCP server starts on stdio immediately at boot, before indexing finishes. This lets clients issue tool calls right away while the initial index builds in the background.
 
+## Project structure
+
+```
+src/
+  index.ts              Entry point, wires everything together
+  server.ts             MCP server definition and tool registration
+  config.ts             Environment variable loading and defaults
+  ignore-files.ts       Auto-adds .sextant/ to .gitignore / .ignore
+  indexer/
+    chunker.ts          Splits markdown by headings into chunks
+    embedder.ts         Calls Ollama for batch embedding
+    freshness.ts        Per-search staleness check and background reindex
+    pipeline.ts         Orchestrates scan, chunk, embed, store
+    state.ts            Indexing state machine (idle/indexing/ready/error)
+    types.ts            Shared TypeScript types
+  store/
+    orama-store.ts      Orama instance: create, insert, search
+    metadata-db.ts      SQLite for file-level metadata tracking
+    persistence.ts      Save/load Orama index to/from disk
+  tools/
+    search.ts           search_docs tool handler
+    list.ts             list_docs tool handler
+    get.ts              get_doc tool handler
+    reindex.ts          reindex_docs tool handler
+    status.ts           sextant_status tool handler
+```
+
 ## Chunking
 
 Markdown files are split into chunks at heading boundaries (`#` through `######`). Each chunk carries its full heading hierarchy for context (e.g., `["Architecture", "Networking", "UDP"]`).
