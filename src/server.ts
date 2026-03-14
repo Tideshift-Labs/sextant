@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { handleSearch } from './tools/search.ts';
 import { handleList } from './tools/list.ts';
 import { handleGet } from './tools/get.ts';
-import { handleReindex } from './tools/reindex.ts';
+import { handleReindex, setReindexPrimary } from './tools/reindex.ts';
 import { reloadIfChanged } from './store/persistence.ts';
 
 // Whether this instance is the primary (owns watcher + indexing).
@@ -12,6 +12,7 @@ let isPrimary = true;
 
 export function setIsPrimary(value: boolean): void {
   isPrimary = value;
+  setReindexPrimary(value);
 }
 
 async function ensureFresh(): Promise<void> {
