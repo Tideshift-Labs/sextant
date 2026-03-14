@@ -171,4 +171,6 @@ See [docs/technical_details.md](docs/technical_details.md) for in-depth coverage
 
 ## License
 
-MIT
+Made with ❤️ in Vancouver, BC by Tideshift Labs, developed using [Claude Code](https://claude.ai/code).
+
+[MIT](LICENSE)
