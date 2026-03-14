@@ -10,6 +10,7 @@ import { requestCancel } from './indexer/state.ts';
 import { startWatcher } from './indexer/watcher.ts';
 import { createMcpServer, setIsPrimary } from './server.ts';
 import { tryAcquireLock, releaseLock } from './lock.ts';
+import { ensureIgnored } from './ignore-files.ts';
 
 async function main() {
   console.error('[startup] sextant starting...');
@@ -19,6 +20,9 @@ async function main() {
   // Ensure directories exist
   mkdirSync(config.dataPath, { recursive: true });
   mkdirSync(config.docsPath, { recursive: true });
+
+  // Add .sextant/ to ignore files if they exist in cwd
+  ensureIgnored(process.cwd());
 
   // Initialize metadata DB
   initMetadataDb();

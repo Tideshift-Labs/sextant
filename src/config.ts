@@ -28,7 +28,7 @@ export const config = {
   ollamaUrl: envStr('OLLAMA_URL', 'http://localhost:11434'),
   embeddingModel: envStr('EMBEDDING_MODEL', 'qwen3-embedding:0.6b'),
   embeddingDims: envInt('EMBEDDING_DIMS', 1024),
-  dataPath: path.resolve(envStr('DATA_PATH', './data')),
+  dataPath: path.resolve(envStr('DATA_PATH', '.sextant')),
   watchEnabled: envBool('WATCH_ENABLED', true),
   maxChunkTokens: envInt('MAX_CHUNK_TOKENS', 512),
   chunkOverlapLines: envInt('CHUNK_OVERLAP_LINES', 2),

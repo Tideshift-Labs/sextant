@@ -112,7 +112,7 @@ Place some markdown files in the `docs/` folder, then start the server:
 bun dev
 ```
 
-The server logs to stderr. On first run it will index all markdown files and persist the index to `data/`. On subsequent starts it loads the persisted index and only re-indexes files that have changed.
+The server logs to stderr. On first run it will index all markdown files and persist the index to `.sextant/`. On subsequent starts it loads the persisted index and only re-indexes files that have changed.
 
 ## Configuration
 
@@ -124,7 +124,7 @@ All settings can be configured through environment variables or a `.env` file:
 | `OLLAMA_URL` | `http://localhost:11434` | Ollama API endpoint |
 | `EMBEDDING_MODEL` | `qwen3-embedding:0.6b` | Ollama embedding model name |
 | `EMBEDDING_DIMS` | `1024` | Embedding vector dimensions |
-| `DATA_PATH` | `./data` | Where to store the index and metadata |
+| `DATA_PATH` | `.sextant` | Where to store the index and metadata |
 | `WATCH_ENABLED` | `true` | Watch for file changes and auto-reindex |
 | `MAX_CHUNK_TOKENS` | `512` | Maximum chunk size (estimated as chars / 4) |
 | `DEFAULT_TOP_K` | `10` | Default number of search results |
