@@ -52,7 +52,7 @@ Add the following to your Claude Code MCP configuration (`.claude/mcp.json` in y
 ```json
 {
   "mcpServers": {
-    "docs-search": {
+    "sextant": {
       "type": "stdio",
       "command": "bunx",
       "args": ["github:Tideshift-Labs/sextant"],

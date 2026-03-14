@@ -7,8 +7,9 @@ import { handleReindex } from './tools/reindex.ts';
 
 export function createMcpServer(): McpServer {
   const server = new McpServer({
-    name: 'docs-search',
-    version: '1.0.0',
+    name: 'sextant',
+    version: '0.1.0',
+    instructions: 'Sextant provides hybrid semantic and keyword search over project documentation. Use its tools to find information about architecture, decisions, guides, issues, worklogs, plans, and any project knowledge stored in markdown files.',
   });
 
   // search_docs tool
