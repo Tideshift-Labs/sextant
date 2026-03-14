@@ -1,0 +1,27 @@
+{
+  "name": "docs-mcp-server",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "start": "bun run src/index.ts",
+    "build": "bun build --compile --minify src/index.ts --outfile dist/docs-mcp-server",
+    "test": "bun test",
+    "reindex": "bun run src/scripts/reindex.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^25.5.0",
+    "bun-types": "^1.3.10"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@orama/orama": "^3.1.18",
+    "chokidar": "^5.0.0",
+    "dotenv": "^17.3.1"
+  }
+}
