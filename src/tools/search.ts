@@ -26,14 +26,16 @@ export async function handleSearch(args: SearchArgs): Promise<string> {
     statusPrefix = `Note: ${freshness.staleCount} file(s) changed since last index. Background reindex started. Results may not reflect latest changes.\n\n`;
   }
 
-  if (indexState.status === 'indexing') {
-    const docCount = listFiles().length;
-    if (docCount === 0) {
-      return `Sextant is still performing initial indexing (${indexState.filesProcessed}/${indexState.filesFound} files). Search will be available shortly. Use sextant_status to check progress.`;
+  if (!statusPrefix) {
+    if (indexState.status === 'indexing') {
+      const docCount = listFiles().length;
+      if (docCount === 0) {
+        return `Sextant is still performing initial indexing (${indexState.filesProcessed}/${indexState.filesFound} files). Search will be available shortly. Use sextant_status to check progress.`;
+      }
+      statusPrefix = `Note: Indexing is in progress (${indexState.filesProcessed}/${indexState.filesFound} files). Results may be incomplete.\n\n`;
+    } else if (indexState.status === 'error') {
+      statusPrefix = `Warning: Last indexing failed: ${indexState.lastError}\n\n`;
     }
-    statusPrefix = `Note: Indexing is in progress (${indexState.filesProcessed}/${indexState.filesFound} files). Results may be incomplete.\n\n`;
-  } else if (indexState.status === 'error') {
-    statusPrefix = `Warning: Last indexing failed: ${indexState.lastError}\n\n`;
   }
 
   try {
@@ -63,7 +65,7 @@ export async function handleSearch(args: SearchArgs): Promise<string> {
     }
 
     if (results.hits.length === 0) {
-      return `No results found for "${query}"${category ? ` in category "${category}"` : ''}.`;
+      return statusPrefix + `No results found for "${query}"${category ? ` in category "${category}"` : ''}.`;
     }
 
     const lines: string[] = [

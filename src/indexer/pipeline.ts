@@ -24,11 +24,13 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
   // Remove files from the index that no longer exist on disk
   const diskFileSet = new Set(filePaths);
   const indexedFiles = getAllFiles();
+  let deletionsPerformed = false;
   for (const indexed of indexedFiles) {
     if (!diskFileSet.has(indexed.filePath)) {
       console.error(`[pipeline] Removing deleted file from index: ${indexed.filePath}`);
       await removeByFile(indexed.filePath);
       removeFileMeta(indexed.filePath);
+      deletionsPerformed = true;
     }
   }
 
@@ -101,6 +103,7 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
 
   if (allChunks.length === 0) {
     console.error('[pipeline] No new chunks to index');
+    if (deletionsPerformed) await persistToDisk();
     setReady({ filesProcessed, chunksCreated: 0 });
     return { filesProcessed, chunksCreated: 0, duration: Date.now() - start };
   }
