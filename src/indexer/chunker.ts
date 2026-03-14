@@ -40,8 +40,8 @@ function parseFrontmatter(lines: string[]): FrontmatterResult {
   return { metadata, bodyStartIndex: 0 };
 }
 
-function makeChunkId(filePath: string, headingHierarchy: string[], chunkIndex: number): string {
-  const input = `${filePath}::${headingHierarchy.join('::')}::${chunkIndex}`;
+function makeChunkId(filePath: string, content: string): string {
+  const input = `${filePath}::${content}`;
   return createHash('sha256').update(input).digest('hex').slice(0, 16);
 }
 
@@ -165,7 +165,7 @@ export function chunkMarkdown(
       const subChunks = splitLargeChunk(content, config.chunkOverlapLines);
       for (let i = 0; i < subChunks.length; i++) {
         chunks.push({
-          id: makeChunkId(relativePath, hierarchy, i),
+          id: makeChunkId(relativePath, subChunks[i]!),
           filePath: relativePath,
           fileName,
           category: fileCategory,
@@ -192,7 +192,7 @@ export function chunkMarkdown(
     const subChunks = splitLargeChunk(content, config.chunkOverlapLines);
     for (let i = 0; i < subChunks.length; i++) {
       chunks.push({
-        id: makeChunkId(relativePath, hierarchy, i),
+        id: makeChunkId(relativePath, subChunks[i]!),
         filePath: relativePath,
         fileName,
         category: fileCategory,
