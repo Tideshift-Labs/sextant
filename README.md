@@ -58,7 +58,7 @@ Verify the installation with `bun --version`.
 [Ollama](https://ollama.com) must be installed and running locally. Pull the embedding model before first use:
 
 ```bash
-ollama pull qwen3-embedding:0.6b
+ollama pull nomic-embed-text
 ```
 
 Ollama runs on `http://localhost:11434` by default. If Ollama is not running, keyword search will still work, but semantic and hybrid search will be unavailable.
