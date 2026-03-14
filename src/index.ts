@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { mkdirSync } from 'fs';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { config } from './config.ts';

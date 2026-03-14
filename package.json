@@ -1,8 +1,16 @@
 {
-  "name": "docs-mcp-server",
+  "name": "sextant-docs-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for hybrid semantic + keyword search over local markdown docs",
   "module": "src/index.ts",
   "type": "module",
-  "private": true,
+  "bin": {
+    "sextant-docs-mcp": "src/index.ts"
+  },
+  "files": [
+    "src/**/*",
+    ".env.example"
+  ],
   "scripts": {
     "dev": "bun run src/index.ts",
     "start": "bun run src/index.ts",
