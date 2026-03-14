@@ -15,6 +15,23 @@ Claude Code (or any MCP client) can then search your documentation using natural
 
 The entire stack runs locally with no external services. There are no native modules; everything is pure JavaScript/TypeScript.
 
+### Multiple sessions
+
+MCP servers using stdio transport are spawned once per client session. If you have several Claude Code sessions open in the same project, each one starts its own Sextant process. Sextant coordinates between these instances automatically:
+
+- The first instance becomes the **primary**. It owns the file watcher and handles all indexing. Changes it writes to disk are available to the other instances.
+- Subsequent instances start as **secondaries**. They skip the watcher and indexing, and reload the on-disk index before each tool call so their search results stay current.
+- If the primary exits, the lock expires after 30 seconds and the next instance to start takes over.
+
+This means you can open as many sessions as you like without duplicate indexing work or stale results.
+
+### Index freshness
+
+Sextant keeps its index up to date across restarts and external changes:
+
+- While running, the primary instance watches for file changes and re-indexes immediately.
+- On startup, Sextant compares every file's modification time against what was previously indexed. New and changed files are re-indexed; deleted files are removed from the index. This covers cases where docs were updated while the server was not running (for example, after a `git pull`).
+
 ## Prerequisites
 
 ### Bun

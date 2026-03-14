@@ -4,6 +4,21 @@ import { handleSearch } from './tools/search.ts';
 import { handleList } from './tools/list.ts';
 import { handleGet } from './tools/get.ts';
 import { handleReindex } from './tools/reindex.ts';
+import { reloadIfChanged } from './store/persistence.ts';
+
+// Whether this instance is the primary (owns watcher + indexing).
+// Secondary instances reload from disk before each tool call.
+let isPrimary = true;
+
+export function setIsPrimary(value: boolean): void {
+  isPrimary = value;
+}
+
+async function ensureFresh(): Promise<void> {
+  if (!isPrimary) {
+    await reloadIfChanged();
+  }
+}
 
 export function createMcpServer(): McpServer {
   const server = new McpServer({
@@ -32,6 +47,7 @@ export function createMcpServer(): McpServer {
         ),
     },
     async (args) => {
+      await ensureFresh();
       const result = await handleSearch(args);
       return { content: [{ type: 'text', text: result }] };
     }
@@ -45,6 +61,7 @@ export function createMcpServer(): McpServer {
       category: z.string().optional().describe('Optional: filter by category/folder name'),
     },
     async (args) => {
+      await ensureFresh();
       const result = handleList(args);
       return { content: [{ type: 'text', text: result }] };
     }
@@ -60,6 +77,7 @@ export function createMcpServer(): McpServer {
       ),
     },
     async (args) => {
+      await ensureFresh();
       const result = await handleGet(args);
       return { content: [{ type: 'text', text: result }] };
     }
@@ -76,6 +94,7 @@ export function createMcpServer(): McpServer {
         .describe('If true, wipe all existing index data before re-indexing (default: true)'),
     },
     async (args) => {
+      await ensureFresh();
       const result = await handleReindex(args);
       return { content: [{ type: 'text', text: result }] };
     }

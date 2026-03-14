@@ -7,10 +7,11 @@ import { initStore } from './store/orama-store.ts';
 import { loadFromDisk, flushPersist } from './store/persistence.ts';
 import { indexAll } from './indexer/pipeline.ts';
 import { startWatcher } from './indexer/watcher.ts';
-import { createMcpServer } from './server.ts';
+import { createMcpServer, setIsPrimary } from './server.ts';
+import { tryAcquireLock, releaseLock } from './lock.ts';
 
 async function main() {
-  console.error('[startup] docs-mcp-server starting...');
+  console.error('[startup] sextant starting...');
   console.error(`[startup] Docs path: ${config.docsPath}`);
   console.error(`[startup] Data path: ${config.dataPath}`);
 
@@ -22,6 +23,16 @@ async function main() {
   initMetadataDb();
   console.error('[startup] Metadata DB initialized');
 
+  // Determine if this is the primary instance (owns watcher + indexing)
+  const isPrimary = await tryAcquireLock();
+  setIsPrimary(isPrimary);
+
+  if (isPrimary) {
+    console.error('[startup] Primary instance (owns watcher + indexing)');
+  } else {
+    console.error('[startup] Secondary instance (read-only, reloads from disk on demand)');
+  }
+
   // Initialize Orama store - try loading from disk first
   const loaded = await loadFromDisk();
   if (!loaded) {
@@ -29,18 +40,22 @@ async function main() {
     console.error('[startup] Created fresh Orama index');
   }
 
-  // Index all docs (skips unchanged files if loaded from disk)
-  try {
-    const stats = await indexAll(config.docsPath);
-    console.error(`[startup] Indexing complete: ${stats.filesProcessed} files, ${stats.chunksCreated} chunks in ${stats.duration}ms`);
-  } catch (err) {
-    console.error('[startup] Initial indexing failed (server will still start):', err);
-  }
-
-  // Start file watcher
+  // Only the primary instance indexes and watches
   let watcher: ReturnType<typeof startWatcher> | null = null;
-  if (config.watchEnabled) {
-    watcher = startWatcher(config.docsPath);
+
+  if (isPrimary) {
+    // Index all docs (skips unchanged files if loaded from disk)
+    try {
+      const stats = await indexAll(config.docsPath);
+      console.error(`[startup] Indexing complete: ${stats.filesProcessed} files, ${stats.chunksCreated} chunks in ${stats.duration}ms`);
+    } catch (err) {
+      console.error('[startup] Initial indexing failed (server will still start):', err);
+    }
+
+    // Start file watcher
+    if (config.watchEnabled) {
+      watcher = startWatcher(config.docsPath);
+    }
   }
 
   // Start MCP server
@@ -55,7 +70,10 @@ async function main() {
     if (watcher) {
       await watcher.close();
     }
-    await flushPersist();
+    if (isPrimary) {
+      await flushPersist();
+      await releaseLock();
+    }
     closeMetadataDb();
     process.exit(0);
   };

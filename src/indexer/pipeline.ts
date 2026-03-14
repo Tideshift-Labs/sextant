@@ -20,6 +20,17 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
     filePaths.push(match);
   }
 
+  // Remove files from the index that no longer exist on disk
+  const diskFileSet = new Set(filePaths);
+  const indexedFiles = getAllFiles();
+  for (const indexed of indexedFiles) {
+    if (!diskFileSet.has(indexed.filePath)) {
+      console.error(`[pipeline] Removing deleted file from index: ${indexed.filePath}`);
+      await removeByFile(indexed.filePath);
+      removeFileMeta(indexed.filePath);
+    }
+  }
+
   if (filePaths.length === 0) {
     console.error('[pipeline] No markdown files found in', docsPath);
     return { filesProcessed: 0, chunksCreated: 0, duration: Date.now() - start };
