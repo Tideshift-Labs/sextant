@@ -4,6 +4,7 @@ import { handleSearch } from './tools/search.ts';
 import { handleList } from './tools/list.ts';
 import { handleGet } from './tools/get.ts';
 import { handleReindex, setReindexPrimary } from './tools/reindex.ts';
+import { handleStatus } from './tools/status.ts';
 import { reloadIfChanged } from './store/persistence.ts';
 
 // Whether this instance is the primary (owns watcher + indexing).
@@ -15,6 +16,10 @@ export function setIsPrimary(value: boolean): void {
   setReindexPrimary(value);
 }
 
+export function getIsPrimary(): boolean {
+  return isPrimary;
+}
+
 async function ensureFresh(): Promise<void> {
   if (!isPrimary) {
     await reloadIfChanged();
@@ -22,11 +27,12 @@ async function ensureFresh(): Promise<void> {
 }
 
 export function createMcpServer(): McpServer {
-  const server = new McpServer({
-    name: 'sextant',
-    version: '0.1.0',
-    instructions: 'Sextant provides hybrid semantic and keyword search over project documentation. Use its tools to find information about architecture, decisions, guides, issues, worklogs, plans, and any project knowledge stored in markdown files.',
-  });
+  const server = new McpServer(
+    { name: 'sextant', version: '0.1.0' },
+    {
+      instructions: 'Sextant provides hybrid semantic and keyword search over project documentation. Use its tools to find information about architecture, decisions, guides, issues, worklogs, plans, and any project knowledge stored in markdown files.',
+    },
+  );
 
   // search_docs tool
   server.tool(
@@ -97,6 +103,17 @@ export function createMcpServer(): McpServer {
     async (args) => {
       await ensureFresh();
       const result = await handleReindex(args);
+      return { content: [{ type: 'text', text: result }] };
+    }
+  );
+
+  // sextant_status tool
+  server.tool(
+    'sextant_status',
+    'Check Sextant health: indexing progress, Ollama connectivity, index stats, and instance role.',
+    {},
+    async () => {
+      const result = await handleStatus();
       return { content: [{ type: 'text', text: result }] };
     }
   );

@@ -6,6 +6,7 @@ import { initMetadataDb, closeMetadataDb } from './store/metadata-db.ts';
 import { initStore } from './store/orama-store.ts';
 import { loadFromDisk, flushPersist } from './store/persistence.ts';
 import { indexAll } from './indexer/pipeline.ts';
+import { requestCancel } from './indexer/state.ts';
 import { startWatcher } from './indexer/watcher.ts';
 import { createMcpServer, setIsPrimary } from './server.ts';
 import { tryAcquireLock, releaseLock } from './lock.ts';
@@ -40,33 +41,39 @@ async function main() {
     console.error('[startup] Created fresh Orama index');
   }
 
-  // Only the primary instance indexes and watches
-  let watcher: ReturnType<typeof startWatcher> | null = null;
-
-  if (isPrimary) {
-    // Index all docs (skips unchanged files if loaded from disk)
-    try {
-      const stats = await indexAll(config.docsPath);
-      console.error(`[startup] Indexing complete: ${stats.filesProcessed} files, ${stats.chunksCreated} chunks in ${stats.duration}ms`);
-    } catch (err) {
-      console.error('[startup] Initial indexing failed (server will still start):', err);
-    }
-
-    // Start file watcher
-    if (config.watchEnabled) {
-      watcher = startWatcher(config.docsPath);
-    }
-  }
-
-  // Start MCP server
+  // Start MCP server immediately so the connection is available while indexing
   const server = createMcpServer();
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error('[startup] MCP server running on stdio');
 
+  // Only the primary instance indexes and watches
+  let watcher: ReturnType<typeof startWatcher> | null = null;
+  let indexingPromise: Promise<void> | null = null;
+
+  if (isPrimary) {
+    // Fire indexing in the background (not awaited)
+    indexingPromise = indexAll(config.docsPath)
+      .then((stats) => {
+        console.error(`[startup] Indexing complete: ${stats.filesProcessed} files, ${stats.chunksCreated} chunks in ${stats.duration}ms`);
+        // Start file watcher after indexing completes
+        if (config.watchEnabled) {
+          watcher = startWatcher(config.docsPath);
+        }
+      })
+      .catch((err) => {
+        console.error('[startup] Initial indexing failed (server keeps running):', err);
+      });
+  }
+
   // Graceful shutdown
   const shutdown = async () => {
     console.error('[shutdown] Shutting down...');
+    requestCancel();
+    if (indexingPromise) {
+      // Give indexing up to 2s to finish gracefully
+      await Promise.race([indexingPromise, Bun.sleep(2000)]);
+    }
     if (watcher) {
       await watcher.close();
     }

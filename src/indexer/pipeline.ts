@@ -6,6 +6,7 @@ import { embedTexts, checkOllamaHealth } from './embedder.ts';
 import { insertChunks, removeByFile, initStore } from '../store/orama-store.ts';
 import { upsertFile, removeFile as removeFileMeta, getFile, getAllFiles, clearAll as clearMetadata } from '../store/metadata-db.ts';
 import { debouncedPersist, persistToDisk } from '../store/persistence.ts';
+import { setIndexing, updateProgress, setReady, setError, isCancelRequested, getState } from './state.ts';
 import type { IndexStats, DocChunk } from './types.ts';
 
 export async function indexAll(docsPath: string): Promise<IndexStats> {
@@ -31,8 +32,11 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
     }
   }
 
+  setIndexing(filePaths.length);
+
   if (filePaths.length === 0) {
     console.error('[pipeline] No markdown files found in', docsPath);
+    setReady({ filesProcessed: 0, chunksCreated: 0 });
     return { filesProcessed: 0, chunksCreated: 0, duration: Date.now() - start };
   }
 
@@ -50,6 +54,13 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
   const fileMetadata: { filePath: string; lastModified: number; chunkCount: number; title: string | null; category: string }[] = [];
 
   for (const relPath of filePaths) {
+    if (isCancelRequested()) {
+      console.error('[pipeline] Indexing cancelled');
+      setError('Indexing cancelled');
+      return { filesProcessed, chunksCreated, duration: Date.now() - start };
+    }
+
+    updateProgress(filesProcessed, chunksCreated, relPath);
     const absPath = path.join(docsPath, relPath);
     try {
       const file = Bun.file(absPath);
@@ -90,6 +101,7 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
 
   if (allChunks.length === 0) {
     console.error('[pipeline] No new chunks to index');
+    setReady({ filesProcessed, chunksCreated: 0 });
     return { filesProcessed, chunksCreated: 0, duration: Date.now() - start };
   }
 
@@ -112,7 +124,10 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
     await persistToDisk();
 
     console.error(`[pipeline] Indexed ${filesProcessed} files, ${chunksCreated} chunks in ${Date.now() - start}ms`);
+    setReady({ filesProcessed, chunksCreated });
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    setError(msg);
     console.error('[pipeline] Embedding/indexing failed:', err);
     throw err;
   }
@@ -165,6 +180,10 @@ export async function removeFileFromIndex(filePath: string, docsPath: string): P
 }
 
 export async function fullReindex(docsPath: string, clearExisting: boolean): Promise<IndexStats> {
+  if (getState().status === 'indexing') {
+    return { filesProcessed: 0, chunksCreated: 0, duration: 0 };
+  }
+
   if (clearExisting) {
     console.error('[pipeline] Clearing existing index...');
     await initStore();

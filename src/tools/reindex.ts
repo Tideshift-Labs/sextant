@@ -1,5 +1,6 @@
 import { config } from '../config.ts';
 import { fullReindex } from '../indexer/pipeline.ts';
+import { getState } from '../indexer/state.ts';
 import { reloadIfChanged } from '../store/persistence.ts';
 
 interface ReindexArgs {
@@ -23,19 +24,23 @@ export async function handleReindex(args: ReindexArgs): Promise<string> {
     return 'This is a secondary instance. The index is already up to date. To force a full reindex, use the primary Claude Code session (the first one opened).';
   }
 
+  const indexState = getState();
+  if (indexState.status === 'indexing') {
+    return `Indexing is already in progress (${indexState.filesProcessed}/${indexState.filesFound} files). Use sextant_status to monitor progress.`;
+  }
+
   const clearExisting = args.clear_existing !== false; // default true
 
-  try {
-    console.error(`[reindex] Starting full reindex (clear_existing: ${clearExisting})...`);
-    const stats = await fullReindex(config.docsPath, clearExisting);
-    return [
-      'Reindex complete:',
-      `  Files processed: ${stats.filesProcessed}`,
-      `  Chunks created: ${stats.chunksCreated}`,
-      `  Duration: ${stats.duration}ms`,
-    ].join('\n');
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return `Reindex error: ${msg}`;
-  }
+  console.error(`[reindex] Starting full reindex (clear_existing: ${clearExisting})...`);
+
+  // Fire and forget -- return immediately
+  fullReindex(config.docsPath, clearExisting)
+    .then((stats) => {
+      console.error(`[reindex] Complete: ${stats.filesProcessed} files, ${stats.chunksCreated} chunks in ${stats.duration}ms`);
+    })
+    .catch((err) => {
+      console.error('[reindex] Failed:', err);
+    });
+
+  return `Reindex started. Use sextant_status to monitor progress.`;
 }

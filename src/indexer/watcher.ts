@@ -1,5 +1,5 @@
 import path from 'path';
-import chokidar from 'chokidar';
+import { watch, type FSWatcher } from 'chokidar';
 import { indexFile, removeFileFromIndex } from './pipeline.ts';
 
 const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -17,10 +17,10 @@ function debounce(filePath: string, fn: () => void): void {
   );
 }
 
-export function startWatcher(docsPath: string): chokidar.FSWatcher {
+export function startWatcher(docsPath: string): FSWatcher {
   console.error(`[watcher] Watching ${docsPath} for changes...`);
 
-  const watcher = chokidar.watch(path.join(docsPath, '**/*.md'), {
+  const watcher = watch(path.join(docsPath, '**/*.md'), {
     persistent: true,
     ignoreInitial: true,
     awaitWriteFinish: { stabilityThreshold: 500, pollInterval: 100 },

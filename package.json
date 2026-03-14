@@ -19,6 +19,7 @@
     "dev": "bun run src/index.ts",
     "start": "bun run src/index.ts",
     "build": "bun build --compile --minify src/index.ts --outfile dist/docs-mcp-server",
+    "typecheck": "bunx tsc --noEmit",
     "test": "bun test",
     "reindex": "bun run src/scripts/reindex.ts"
   },

@@ -1,6 +1,8 @@
 import { config } from '../config.ts';
 import { embedQuery, checkOllamaHealth } from '../indexer/embedder.ts';
+import { getState } from '../indexer/state.ts';
 import { searchHybrid, searchKeyword, searchVector } from '../store/orama-store.ts';
+import { listFiles } from '../store/metadata-db.ts';
 
 interface SearchArgs {
   query: string;
@@ -12,6 +14,19 @@ interface SearchArgs {
 export async function handleSearch(args: SearchArgs): Promise<string> {
   const { query, category, search_mode = 'hybrid' } = args;
   const topK = Math.min(args.top_k ?? config.defaultTopK, 30);
+
+  const indexState = getState();
+  let statusPrefix = '';
+
+  if (indexState.status === 'indexing') {
+    const docCount = listFiles().length;
+    if (docCount === 0) {
+      return `Sextant is still performing initial indexing (${indexState.filesProcessed}/${indexState.filesFound} files). Search will be available shortly. Use sextant_status to check progress.`;
+    }
+    statusPrefix = `Note: Indexing is in progress (${indexState.filesProcessed}/${indexState.filesFound} files). Results may be incomplete.\n\n`;
+  } else if (indexState.status === 'error') {
+    statusPrefix = `Warning: Last indexing failed: ${indexState.lastError}\n\n`;
+  }
 
   try {
     let results;
@@ -60,7 +75,7 @@ export async function handleSearch(args: SearchArgs): Promise<string> {
       lines.push('');
     }
 
-    return lines.join('\n');
+    return statusPrefix + lines.join('\n');
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return `Search error: ${msg}`;
