@@ -1,5 +1,5 @@
 import path from 'path';
-import { readFileSync, writeFileSync, unlinkSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, unlinkSync, existsSync, renameSync } from 'fs';
 import { config } from './config.ts';
 
 const LOCK_FILE = path.join(config.dataPath, 'watcher.lock');
@@ -68,7 +68,10 @@ function isProcessAlive(pid: number): boolean {
 }
 
 function writeLockData(): void {
-  writeFileSync(LOCK_FILE, JSON.stringify({ pid: process.pid, heartbeat: Date.now() }));
+  // Atomic write via temp+rename to prevent torn reads by other instances
+  const tempPath = LOCK_FILE + '.tmp';
+  writeFileSync(tempPath, JSON.stringify({ pid: process.pid, heartbeat: Date.now() }));
+  renameSync(tempPath, LOCK_FILE);
 }
 
 function startHeartbeat(): void {

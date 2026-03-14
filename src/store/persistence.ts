@@ -1,4 +1,5 @@
 import path from 'path';
+import { rename } from 'fs/promises';
 import { config } from '../config.ts';
 import { saveIndex, loadIndex, initStore } from './orama-store.ts';
 
@@ -10,7 +11,10 @@ let lastKnownMtimeMs = 0;
 export async function persistToDisk(): Promise<void> {
   try {
     const data = await saveIndex();
-    await Bun.write(ORAMA_PATH, JSON.stringify(data));
+    // Atomic write: write to temp file, then rename to avoid torn reads by secondary instances
+    const tempPath = ORAMA_PATH + '.tmp';
+    await Bun.write(tempPath, JSON.stringify(data));
+    await rename(tempPath, ORAMA_PATH);
     // Track mtime so we know this write is ours
     const stat = await Bun.file(ORAMA_PATH).stat();
     if (stat) lastKnownMtimeMs = stat.mtimeMs;

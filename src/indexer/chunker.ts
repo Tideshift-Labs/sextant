@@ -123,7 +123,7 @@ function splitLargeChunk(content: string, overlapLines: number): string[] {
     if (current.length + para.length + 2 > MAX_CHUNK_CHARS && current.length > 0) {
       subChunks.push(current.trim());
       // Add overlap: last N lines of previous chunk
-      const prevLines = current.split('\n');
+      const prevLines = current.trimEnd().split('\n');
       const overlap = prevLines.slice(-overlapLines).join('\n');
       current = overlap ? overlap + '\n\n' + para : para;
     } else {
