@@ -1,6 +1,7 @@
 import { config } from '../config.ts';
 import { embedQuery, checkOllamaHealth } from '../indexer/embedder.ts';
 import { getState } from '../indexer/state.ts';
+import { checkAndReindex } from '../indexer/freshness.ts';
 import { searchHybrid, searchKeyword, searchVector } from '../store/orama-store.ts';
 import { listFiles } from '../store/metadata-db.ts';
 
@@ -15,8 +16,15 @@ export async function handleSearch(args: SearchArgs): Promise<string> {
   const { query, category, search_mode = 'hybrid' } = args;
   const topK = Math.min(args.top_k ?? config.defaultTopK, 30);
 
+  // Check for stale docs and trigger background reindex if needed
+  const freshness = await checkAndReindex();
+
   const indexState = getState();
   let statusPrefix = '';
+
+  if (freshness.stale && !freshness.alreadyIndexing) {
+    statusPrefix = `Note: ${freshness.staleCount} file(s) changed since last index. Background reindex started. Results may not reflect latest changes.\n\n`;
+  }
 
   if (indexState.status === 'indexing') {
     const docCount = listFiles().length;

@@ -70,6 +70,26 @@ export async function loadFromDisk(): Promise<boolean> {
   return false;
 }
 
+export async function reloadIfChanged(): Promise<boolean> {
+  try {
+    const file = Bun.file(ORAMA_PATH);
+    if (!(await file.exists())) return false;
+
+    const stat = await file.stat();
+    if (!stat || stat.mtimeMs <= lastKnownMtimeMs) return false;
+
+    console.error('[persistence] Index file changed on disk, reloading...');
+    const data = JSON.parse(await file.text());
+    await loadIndex(data);
+    lastKnownMtimeMs = stat.mtimeMs;
+    console.error('[persistence] Index reloaded from disk');
+    return true;
+  } catch (err) {
+    console.error('[persistence] Failed to reload index:', err);
+    return false;
+  }
+}
+
 export async function flushPersist(): Promise<void> {
   if (persistTimer) {
     clearTimeout(persistTimer);
