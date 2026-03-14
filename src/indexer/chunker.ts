@@ -112,6 +112,31 @@ function splitByHeadings(lines: string[]): HeadingSection[] {
   return sections;
 }
 
+function splitOversizedParagraph(para: string): string[] {
+  // Hard-split a single paragraph that exceeds MAX_CHUNK_CHARS by lines
+  const lines = para.split('\n');
+  const pieces: string[] = [];
+  let current = '';
+
+  for (const line of lines) {
+    // If a single line exceeds the limit, truncate it
+    const safeLine = line.length > MAX_CHUNK_CHARS ? line.slice(0, MAX_CHUNK_CHARS) : line;
+
+    if (current.length + safeLine.length + 1 > MAX_CHUNK_CHARS && current.length > 0) {
+      pieces.push(current.trim());
+      current = safeLine;
+    } else {
+      current = current ? current + '\n' + safeLine : safeLine;
+    }
+  }
+
+  if (current.trim()) {
+    pieces.push(current.trim());
+  }
+
+  return pieces.length > 0 ? pieces : [para];
+}
+
 function splitLargeChunk(content: string, overlapLines: number): string[] {
   if (content.length <= MAX_CHUNK_CHARS) return [content];
 
@@ -120,6 +145,16 @@ function splitLargeChunk(content: string, overlapLines: number): string[] {
   let current = '';
 
   for (const para of paragraphs) {
+    // If a single paragraph exceeds the limit, hard-split it by lines
+    if (para.length > MAX_CHUNK_CHARS) {
+      if (current.trim()) {
+        subChunks.push(current.trim());
+        current = '';
+      }
+      subChunks.push(...splitOversizedParagraph(para));
+      continue;
+    }
+
     if (current.length + para.length + 2 > MAX_CHUNK_CHARS && current.length > 0) {
       subChunks.push(current.trim());
       // Add overlap: last N lines of previous chunk
