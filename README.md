@@ -165,6 +165,10 @@ src/
     reindex.ts          reindex_docs tool handler
 ```
 
+## Technical details
+
+See [docs/technical_details.md](docs/technical_details.md) for in-depth coverage of the architecture, chunking strategy, persistence model, index freshness logic, and edge cases.
+
 ## License
 
 MIT
