@@ -81,10 +81,9 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
       const { chunks, metadata } = chunkMarkdown(absPath, content, lastModified, docsPath);
 
       if (chunks.length > 0) {
-        // Remove old chunks if re-indexing
-        if (existing) {
-          await removeByFile(relPath);
-        }
+        // Always remove old chunks before inserting to avoid duplicate ID collisions
+        // (Orama and metadata DB can get out of sync if a previous persist was incomplete)
+        await removeByFile(relPath);
         allChunks.push(...chunks);
         fileMetadata.push({
           filePath: relPath,
