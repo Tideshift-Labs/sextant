@@ -73,7 +73,7 @@ Add the following to your Claude Code MCP configuration (`.claude/mcp.json` in y
     "sextant": {
       "type": "stdio",
       "command": "bunx",
-      "args": ["github:Tideshift-Labs/sextant"],
+      "args": ["@tideshift/sextant"],
       "env": {
         "DOCS_PATH": "/absolute/path/to/your/docs"
       }

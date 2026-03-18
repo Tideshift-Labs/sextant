@@ -1,15 +1,29 @@
 {
-  "name": "sextant-docs-mcp",
+  "name": "@tideshift/sextant",
   "version": "0.1.0",
   "description": "MCP server for hybrid semantic + keyword search over local markdown docs",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/Tideshift-Labs/sextant.git"
   },
+  "homepage": "https://github.com/Tideshift-Labs/sextant",
+  "keywords": [
+    "mcp",
+    "search",
+    "documentation",
+    "semantic-search",
+    "ollama",
+    "embeddings",
+    "orama",
+    "markdown",
+    "claude",
+    "model-context-protocol"
+  ],
   "module": "src/index.ts",
   "type": "module",
   "bin": {
-    "sextant-docs-mcp": "src/index.ts"
+    "sextant": "src/index.ts"
   },
   "files": [
     "src/**/*",
