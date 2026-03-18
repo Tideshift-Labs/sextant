@@ -3,8 +3,8 @@ import { Glob } from 'bun';
 import { config } from '../config.ts';
 import { chunkMarkdown } from './chunker.ts';
 import { embedTexts, checkOllamaHealth } from './embedder.ts';
-import { insertChunks, removeByFile, initStore } from '../store/orama-store.ts';
-import { upsertFile, removeFile as removeFileMeta, getFile, getAllFiles, clearAll as clearMetadata } from '../store/metadata-db.ts';
+import { insertChunks, removeByIds, removeByFile, initStore } from '../store/orama-store.ts';
+import { upsertFile, removeFile as removeFileMeta, getFile, getChunkIds, getAllFiles, clearAll as clearMetadata } from '../store/metadata-db.ts';
 import { persistToDisk } from '../store/persistence.ts';
 import { setIndexing, updateProgress, setReady, setError, isCancelRequested, getState } from './state.ts';
 import type { IndexStats, DocChunk } from './types.ts';
@@ -28,7 +28,12 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
   for (const indexed of indexedFiles) {
     if (!diskFileSet.has(indexed.filePath)) {
       console.error(`[pipeline] Removing deleted file from index: ${indexed.filePath}`);
-      await removeByFile(indexed.filePath);
+      const knownIds = getChunkIds(indexed.filePath);
+      if (knownIds) {
+        await removeByIds(knownIds);
+      } else {
+        await removeByFile(indexed.filePath);
+      }
       removeFileMeta(indexed.filePath);
       deletionsPerformed = true;
     }
@@ -53,7 +58,7 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
 
   // Chunk all files
   const allChunks: DocChunk[] = [];
-  const fileMetadata: { filePath: string; lastModified: number; chunkCount: number; title: string | null; category: string }[] = [];
+  const fileMetadata: { filePath: string; lastModified: number; chunkCount: number; chunkIds: string[]; title: string | null; category: string }[] = [];
 
   for (const relPath of filePaths) {
     if (isCancelRequested()) {
@@ -81,14 +86,19 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
       const { chunks, metadata } = chunkMarkdown(absPath, content, lastModified, docsPath);
 
       if (chunks.length > 0) {
-        // Always remove old chunks before inserting to avoid duplicate ID collisions
-        // (Orama and metadata DB can get out of sync if a previous persist was incomplete)
-        await removeByFile(relPath);
+        // Remove old chunks before inserting to avoid duplicate ID collisions
+        const knownIds = getChunkIds(relPath);
+        if (knownIds) {
+          await removeByIds(knownIds);
+        } else {
+          await removeByFile(relPath);
+        }
         allChunks.push(...chunks);
         fileMetadata.push({
           filePath: relPath,
           lastModified,
           chunkCount: chunks.length,
+          chunkIds: chunks.map((c) => c.id),
           title: metadata.title ?? chunks[0]?.headingHierarchy[0] ?? null,
           category: chunks[0]?.category ?? 'root',
         });
@@ -119,7 +129,7 @@ export async function indexAll(docsPath: string): Promise<IndexStats> {
 
     // Update metadata DB
     for (const fm of fileMetadata) {
-      upsertFile(fm.filePath, fm.lastModified, fm.chunkCount, fm.title, fm.category);
+      upsertFile(fm.filePath, fm.lastModified, fm.chunkCount, fm.title, fm.category, fm.chunkIds);
     }
 
     // Persist

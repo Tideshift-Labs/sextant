@@ -30,4 +30,5 @@ export interface IndexedFile {
   title: string | null;
   category: string | null;
   indexedAt: number;
+  chunkIds: string | null;
 }

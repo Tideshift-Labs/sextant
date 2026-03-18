@@ -54,9 +54,23 @@ export async function insertChunks(chunks: DocChunk[], embeddings: number[][]): 
   await insertMultiple(store, docs);
 }
 
+export async function removeByIds(ids: string[]): Promise<number> {
+  const store = getStore();
+  let removed = 0;
+  for (const id of ids) {
+    try {
+      await remove(store, id);
+      removed++;
+    } catch {
+      // ID not found in store, skip
+    }
+  }
+  return removed;
+}
+
 export async function removeByFile(filePath: string): Promise<number> {
   const store = getStore();
-  // Find all documents with this filePath
+  // Fallback: search for chunks by filePath (used when chunkIds are not available)
   const results = await search(store, {
     mode: 'fulltext',
     term: filePath,

@@ -19,6 +19,13 @@ export function initMetadataDb(): Database {
       indexedAt INTEGER NOT NULL
     )
   `);
+
+  // Migration: add chunkIds column for deterministic chunk removal
+  const columns = db.query('PRAGMA table_info(indexed_files)').all() as { name: string }[];
+  if (!columns.some((c) => c.name === 'chunkIds')) {
+    db.run('ALTER TABLE indexed_files ADD COLUMN chunkIds TEXT');
+  }
+
   return db;
 }
 
@@ -32,12 +39,13 @@ export function upsertFile(
   lastModified: number,
   chunkCount: number,
   title: string | null,
-  category: string | null
+  category: string | null,
+  chunkIds?: string[]
 ): void {
   const d = getMetadataDb();
   d.query(
-    `INSERT OR REPLACE INTO indexed_files (filePath, lastModified, chunkCount, title, category, indexedAt)
-     VALUES ($filePath, $lastModified, $chunkCount, $title, $category, $indexedAt)`
+    `INSERT OR REPLACE INTO indexed_files (filePath, lastModified, chunkCount, title, category, indexedAt, chunkIds)
+     VALUES ($filePath, $lastModified, $chunkCount, $title, $category, $indexedAt, $chunkIds)`
   ).run({
     $filePath: filePath,
     $lastModified: lastModified,
@@ -45,7 +53,18 @@ export function upsertFile(
     $title: title,
     $category: category,
     $indexedAt: Date.now(),
+    $chunkIds: chunkIds ? JSON.stringify(chunkIds) : null,
   });
+}
+
+export function getChunkIds(filePath: string): string[] | null {
+  const file = getFile(filePath);
+  if (!file?.chunkIds) return null;
+  try {
+    return JSON.parse(file.chunkIds);
+  } catch {
+    return null;
+  }
 }
 
 export function getFile(filePath: string): IndexedFile | null {
